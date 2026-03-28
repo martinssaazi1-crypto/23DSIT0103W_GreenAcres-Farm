@@ -1,364 +1,233 @@
 <?php
 session_start();
+require_once 'db.php';
 
 /* AUTHENTICATION CHECK */
 if(!isset($_SESSION['user_id'])){
     header("Location: login.php");
     exit();
 }
+
+// Fetch real-time counts for the dashboard cards
+$animal_count = $conn->query("SELECT SUM(quantity) as total FROM animals")->fetch_assoc()['total'] ?? 0;
+$produce_count = $conn->query("SELECT COUNT(*) as total FROM produce")->fetch_assoc()['total'] ?? 0;
+$staff_count = $conn->query("SELECT COUNT(*) as total FROM staff")->fetch_assoc()['total'] ?? 0;
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Green Acres | Farm Profile</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary: #27ae60;
+            --dark: #1e272e;
+            --accent: #f39c12;
+            --light: #f4f7f6;
+            --white: #ffffff;
+        }
 
-<title>GREEN ACRES FARMS</title>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            background-color: var(--light);
+            color: var(--dark);
+            scroll-behavior: smooth;
+        }
 
-<link rel="stylesheet" href="Assets/CSS/style.css">
+        /* NAVIGATION OVERLAY */
+        header {
+            background: var(--dark);
+            color: white;
+            padding: 20px 5%;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        .logo-brand { font-size: 1.5rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
 
-<style>
+        nav ul { display: flex; list-style: none; gap: 25px; margin: 0; }
+        nav ul li a { color: #a5b1c2; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: 0.3s; }
+        nav ul li a:hover { color: var(--primary); }
 
-/* BODY */
-body{
-    font-family:Arial, sans-serif;
-    margin:0;
-    color:#2c3e50;
+        .btn-dash { background: var(--primary); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.8rem; }
 
-    background:
-    linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
-    url("https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1350&q=80");
+        /* HERO SECTION */
+        .hero {
+            height: 60vh;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 0 20px;
+        }
 
-    background-size:cover;
-    background-position:center;
-}
+        .hero h1 { font-size: 3.5rem; margin: 0; letter-spacing: -2px; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; margin-top: 15px; }
 
-/* HEADER */
-header, footer{
-    background-color:rgba(102,205,170,0.95);
-    color:white;
-    padding:15px 20px;
-}
+        /* QUICK STATS CARDS (Linked to main pages) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: -60px auto 50px;
+            padding: 0 20px;
+        }
 
-.top-bar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+        .stat-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
 
-/* LOGO */
-.profile img{
-    width:95px;
-    height:95px;
-    border-radius:50%;
-    object-fit:cover;
-    border:4px solid white;
-    box-shadow:0 6px 15px rgba(0,0,0,0.3);
-}
+        .stat-card:hover { transform: translateY(-10px); }
+        .stat-card i { font-size: 2.5rem; color: var(--primary); margin-bottom: 15px; }
+        .stat-card h3 { margin: 10px 0; font-size: 0.9rem; text-transform: uppercase; color: #7f8c8d; letter-spacing: 1px; }
+        .stat-card .value { font-size: 2rem; font-weight: 800; color: var(--dark); }
 
-/* NAVIGATION */
-nav ul{
-    display:flex;
-    list-style:none;
-    padding:0;
-}
+        /* CONTENT SECTIONS */
+        section { max-width: 1000px; margin: 80px auto; padding: 0 20px; }
+        .section-title { font-size: 2rem; margin-bottom: 30px; position: relative; padding-bottom: 10px; }
+        .section-title::after { content: ''; position: absolute; left: 0; bottom: 0; width: 60px; height: 5px; background: var(--primary); border-radius: 10px; }
 
-nav ul li{
-    margin-right:20px;
-}
+        .about-flex { display: flex; gap: 40px; align-items: center; }
+        .about-text { flex: 1; line-height: 1.8; font-size: 1.1rem; color: #4b6584; }
+        .about-img { flex: 1; border-radius: 25px; box-shadow: 20px 20px 0 var(--primary); }
 
-nav ul li a{
-    color:white;
-    text-decoration:none;
-    font-weight:bold;
-    padding:6px 10px;
-    border-radius:5px;
-}
+        /* PRODUCE GRID */
+        .produce-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .produce-item { background: white; padding: 20px; border-radius: 15px; display: flex; align-items: center; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .produce-item i { color: var(--primary); font-size: 1.5rem; }
 
-nav ul li a:hover{
-    background:white;
-    color:#3cb371;
-}
-
-/* MAIN */
-main{
-    padding:25px;
-}
-
-/* HERO SECTION */
-.hero{
-    background:
-    linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)),
-    url("https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1350&q=80");
-
-    background-size:cover;
-    background-position:center;
-
-    color:white;
-    padding:50px;
-    border-radius:12px;
-    margin-bottom:25px;
-    text-align:center;
-}
-
-.hero h2{
-    font-size:32px;
-    margin-bottom:10px;
-}
-
-.hero p{
-    font-size:16px;
-}
-
-/* DASHBOARD CARDS */
-.dashboard-cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:20px;
-    margin-bottom:25px;
-}
-
-.card{
-    background:white;
-    padding:15px;
-    border-radius:12px;
-    text-align:center;
-    box-shadow:0 6px 15px rgba(0,0,0,0.2);
-    transition:0.3s;
-}
-
-.card:hover{
-    transform:translateY(-4px);
-}
-
-.card i{
-    font-size:28px;
-    color:#FF8C00;
-    margin-bottom:8px;
-}
-
-.card h3{
-    margin:8px 0 5px 0;
-    font-size:18px;
-    color:#FF8C00;
-}
-
-.card p{
-    margin:0;
-    font-size:16px;
-    font-weight:bold;
-}
-
-/* SECTIONS */
-section{
-    background:rgba(255,255,255,0.9);
-    margin:20px 0;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 8px 20px rgba(0,0,0,0.2);
-    transition:0.3s;
-}
-
-section:hover{
-    transform:translateY(-3px);
-}
-
-section h2{
-    border-bottom:3px solid #FF8C00;
-    padding-bottom:5px;
-}
-
-/* FOOTER */
-footer{
-    text-align:center;
-    padding:18px;
-}
-
-.socials a{
-    color:white;
-    margin:0 10px;
-    font-size:22px;
-}
-
-/* BACK BUTTON */
-.back-dashboard{
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    background:#FF8C00;
-    color:white;
-    padding:12px 20px;
-    border-radius:8px;
-    font-weight:bold;
-    text-decoration:none;
-    box-shadow:0 4px 10px rgba(0,0,0,0.3);
-}
-
-.back-dashboard:hover{
-    background:#e67300;
-    transform:scale(1.05);
-}
-
-.logout-btn{
-    color:white;
-    font-weight:bold;
-    text-decoration:none;
-}
-
-</style>
+        footer { background: var(--dark); color: white; padding: 60px 5%; text-align: center; }
+        .socials { margin: 25px 0; }
+        .socials a { color: white; font-size: 1.5rem; margin: 0 15px; transition: 0.3s; }
+        .socials a:hover { color: var(--primary); }
+    </style>
 </head>
 
 <body>
 
-<a href="dashboard.php" class="back-dashboard">
-← Back to Dashboard
-</a>
+    <header>
+        <div class="logo-brand">
+            <i class="fas fa-leaf"></i> GREEN ACRES
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#produce">Produce</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+        <a href="suppliers.php"><i class="fas fa-truck-ramp-box"></i> Suppliers</a>
+        <a href="dashboard.php" class="btn-dash">GO TO DASHBOARD <i class="fas fa-arrow-right"></i></a>
+    </header>
 
-<header>
+    <div class="hero">
+        <h1>Nurturing Nature</h1>
+        <p>Sustainable farming practices delivering organic excellence from our fields to your table.</p>
+    </div>
 
-<div class="top-bar">
+    <div class="stats-grid">
+        <a href="animals.php" class="stat-card">
+            <i class="fas fa-cow"></i>
+            <h3>Livestock</h3>
+            <div class="value"><?php echo $animal_count; ?> Heads</div>
+        </a>
+        <a href="produce.php" class="stat-card">
+            <i class="fas fa-basket-shopping"></i>
+            <h3>Inventory</h3>
+            <div class="value"><?php echo $produce_count; ?> Items</div>
+        </a>
+        <a href="staff.php" class="stat-card">
+            <i class="fas fa-users-gear"></i>
+            <h3>Farm Staff</h3>
+            <div class="value"><?php echo $staff_count; ?> Experts</div>
+        </a>
+    </div>
 
-<div class="logo-section">
-<div class="profile">
-<img src="assets/images/logo.jpg" alt="Green Acres Logo">
-</div>
-</div>
+    <section id="about">
+        <h2 class="section-title">Rooted in Excellence</h2>
+        <div class="about-flex">
+            <div class="about-text">
+                <p>Founded by <strong>Martin Ssaazi</strong>, Green Acres was born from a vision of sustainable agriculture in the heart of Wakiso District. We believe that farming should give back to the Earth as much as it takes.</p>
+                <p>Our 50-acre facility utilizes advanced irrigation and organic fertilization to ensure that every tomato, mango, and herb is packed with nutrients and free from harmful chemicals.</p>
+            </div>
+            <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=600&q=80" class="about-img" alt="Farm Field">
+        </div>
+    </section>
 
-<div class="welcome-section">
-<h1>GREEN ACRES FARM</h1>
-<p>
-Welcome,! Your farm management gives you quick insights into animals, crops, staff, and sales to keep your farm running smoothly.
-</p>
-</div>
+    <section id="produce" style="background: white; padding: 60px 40px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.05);">
+        <h2 class="section-title">Our Premium Produce</h2>
+        <div class="produce-list">
+            <div class="produce-item"><i class="fas fa-check-circle"></i> Organic Vegetables (Spinach, Carrots)</div>
+            <div class="produce-item"><i class="fas fa-check-circle"></i> Exotic Fruits (Mangoes, Bananas)</div>
+            <div class="produce-item"><i class="fas fa-check-circle"></i> Culinary Herbs (Basil, Mint)</div>
+            <div class="produce-item"><i class="fas fa-check-circle"></i> Dairy & Poultry (Fresh Milk, Eggs)</div>
+        </div>
+        
+        <h2 class="section-title" style="margin-top: 60px;">Specialized Services</h2>
+        <div class="produce-list">
+            <div class="produce-item"><i class="fas fa-bus"></i> Educational Farm Tours</div>
+            <div class="produce-item"><i class="fas fa-truck-fast"></i> Organic Doorstep Delivery</div>
+            <div class="produce-item"><i class="fas fa-graduation-cap"></i> Sustainable Farming Workshops</div>
+        </div>
+    </section>
 
-<a href="logout.php" class="logout-btn">Logout</a>
+    <section id="contact" style="text-align: center;">
+        <h2 class="section-title" style="display:inline-block">Connect With Us</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px;">
+            <div class="stat-card">
+                <i class="fas fa-envelope-open-text"></i>
+                <p>info@greenacresfarm.com</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-phone-volume"></i>
+                <p>+256 700 000 000</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-location-dot"></i>
+                <p>Wakiso District, Uganda</p>
+            </div>
+        </div>
+    </section>
 
-</div>
-
-<nav>
-<ul>
-<li><a href="#about">About</a></li>
-<li><a href="#founder">Founder</a></li>
-<li><a href="#produce">Our Produce</a></li>
-<li><a href="#services">Services</a></li>
-<li><a href="#staff">Farm Staff</a></li>
-<li><a href="#contact">Contact</a></li>
-</ul>
-</nav>
-
-</header>
-
-<main>
-
-<!-- HERO -->
-
-
-<!-- DASHBOARD CARDS -->
-<div class="dashboard-cards">
-
-<div class="card">
-<i class="fa-solid fa-cow"></i>
-<h3>Farm Animals</h3>
-<p>8</p>
-</div>
-
-<div class="card">
-<i class="fa-solid fa-carrot"></i>
-<h3>Produce</h3>
-<p>4 Types</p>
-</div>
-
-<div class="card">
-<i class="fa-solid fa-users"></i>
-<h3>Farm Staff</h3>
-<p>6</p>
-</div>
-
-<div class="card">
-<i class="fa-solid fa-chart-line"></i>
-<h3>Farm Sales</h3>
-<p>$4,500</p>
-</div>
-
-</div>
-
-<section id="about">
-<h2>About Green Acres</h2>
-<p>
-Green Acres is a sustainable farm dedicated to producing fresh, organic vegetables, fruits, and herbs.
-We focus on environmentally friendly practices that benefit both nature and the community.
-</p>
-</section>
-
-<section id="founder">
-<h2>Founder</h2>
-<p>
-Green Acres Farm was founded by <strong>Martin Ssaazi</strong>, an agricultural enthusiast passionate about sustainable farming and community development.
-</p>
-</section>
-
-<section id="produce">
-<h2>Our Produce</h2>
-
-<ul>
-<li>Fresh Vegetables: Tomatoes, Spinach, Carrots</li>
-<li>Fruits: Mangoes, Bananas, Strawberries</li>
-<li>Herbs: Basil, Mint, Coriander</li>
-<li>Dairy Products: Fresh Milk from cows</li>
-<li>Farm Eggs from free-range chickens</li>
-</ul>
-
-</section>
-
-<section id="services">
-<h2>Services</h2>
-
-<ul>
-<li>Farm Tours and Educational Visits</li>
-<li>Organic Produce Delivery</li>
-<li>Workshops on Sustainable Farming</li>
-<li>Agricultural Training for Students</li>
-</ul>
-
-</section>
-
-<section id="staff">
-<h2>Our Farm Staff</h2>
-
-<p>
-Green Acres Farm is supported by a hardworking team of agricultural professionals and farm workers.
-</p>
-
-</section>
-
-<section id="contact">
-<h2>Contact Us</h2>
-
-<p>Email: info@greenacresfarm.com</p>
-<p>Phone: +256 700 000 000</p>
-<p>Location: Wakiso District, Uganda</p>
-
-</section>
-
-</main>
-
-<footer>
-
-<p>Follow Us</p>
-
-<div class="socials">
-<a href="#"><i class="fab fa-tiktok"></i></a>
-<a href="#"><i class="fab fa-x"></i></a>
-</div>
-
-<p>© 2026 Green Acres Farm</p>
-
-</footer>
+    <footer>
+        <div class="logo-brand" style="justify-content: center; color: white; margin-bottom: 20px;">
+            <i class="fas fa-leaf"></i> GREEN ACRES
+        </div>
+        <p>Leading the way in Sustainable Agriculture in East Africa.</p>
+        <div class="socials">
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+            <a href="#"><i class="fab fa-whatsapp"></i></a>
+        </div>
+        <p style="opacity: 0.5; font-size: 0.8rem;">&copy; 2026 Green Acres Farm Management System. All rights reserved.</p>
+    </footer>
 
 </body>
 </html>

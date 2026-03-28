@@ -1,6 +1,6 @@
 <?php
 $host = "localhost";
-$dbname = "green_acrea_system";
+$dbname = "farm_supply_green";
 $username = "root";
 $password = "";
 

@@ -1,5 +1,4 @@
 <?php
-// db.php - Centralized connection
 $host = "localhost";
 $user = "root";
 $pass = "";
