@@ -6,7 +6,7 @@ Name: Martin Ssaazi
 Registration Number: 23DSIT0103W  
 
 Project Description
-This is a web-based farm management system that helps manage animals, crops, staff, and farm produce. The system allows users to perform CRUD operations and monitor farm activities efficiently.
+This is a web-based farm management system that helps manage animals, purchases, crops, staff, and farm produce. The system allows users to perform CRUD operations and monitor farm activities efficiently.
  Technologies Used
 - PHP
 - MySQL
@@ -29,5 +29,5 @@ Database Setup
    database.sql
 
 Login Details
-Username: admin  
-Password: admin123
+Username: admin@greenacres.com 
+Password: 1234
